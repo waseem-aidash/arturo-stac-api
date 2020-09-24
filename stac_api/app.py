@@ -1,7 +1,9 @@
 """FastAPI application."""
+import asyncio
 import logging
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi.logger import logger
 from stac_api.api import create_app
@@ -50,3 +52,13 @@ async def add_process_time_header(request: Request, call_next):
     logger.info(f"Request to {request.url.path} took {process_time} seconds")
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
+
+@app.on_event("startup")
+async def set_workers_per_thread():
+    """set number of workers per thread"""
+    logger.info(f"cpu count: {os.cpu_count()}")
+    loop = asyncio.get_running_loop()
+    workers_per_thread = int(os.getenv("THREADS_PER_WORKER", 2 * os.cpu_count() + 1))
+    logger.info(f"workers per thread: {workers_per_thread}")
+    loop.set_default_executor(ThreadPoolExecutor(max_workers=workers_per_thread))
