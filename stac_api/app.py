@@ -1,8 +1,16 @@
 """FastAPI application."""
+import logging
 import os
+import time
 
+from fastapi.logger import logger
 from stac_api.api import create_app
 from stac_api.config import ApiSettings
+from starlette.requests import Request
+
+gunicorn_logger = logging.getLogger("gunicorn.error")
+logger.handlers = gunicorn_logger.handlers
+logger.setLevel(logging.INFO)
 
 os.environ["AWS_REQUEST_PAYER"] = "requester"
 
@@ -31,3 +39,14 @@ settings = ApiSettings(
     },
 )
 app = create_app(settings=settings)
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """log request time"""
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(f"Request to {request.url.path} took {process_time} seconds")
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
