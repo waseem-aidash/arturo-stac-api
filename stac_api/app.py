@@ -1,5 +1,5 @@
 """FastAPI application."""
-from stac_api.api.app import StacApi
+from stac_api.api.app import PostgresStacApi
 from stac_api.api.extensions import (
     FieldsExtension,
     QueryExtension,
@@ -12,7 +12,7 @@ from stac_api.clients.postgres.tokens import PaginationTokenClient
 from stac_api.clients.postgres.transactions import TransactionsClient
 from stac_api.config import ApiSettings
 
-api = StacApi(
+api = PostgresStacApi(
     settings=ApiSettings(),
     extensions=[
         TransactionExtension(client=TransactionsClient()),

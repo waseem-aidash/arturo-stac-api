@@ -3,12 +3,12 @@ import os
 from typing import Callable, Dict, Generator
 from unittest.mock import PropertyMock, patch
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.testclient import TestClient
 
-import pytest
-from stac_api.api.app import StacApi
+from stac_api.api.app import PostgresStacApi
 from stac_api.api.extensions import (
     ContextExtension,
     FieldsExtension,
@@ -120,7 +120,7 @@ def postgres_transactions(reader_connection, writer_connection):
 
 @pytest.fixture
 def api_client():
-    return StacApi(
+    return PostgresStacApi(
         settings=ApiSettings(),
         client=CoreCrudClient(pagination_client=PaginationTokenClient()),
         extensions=[
