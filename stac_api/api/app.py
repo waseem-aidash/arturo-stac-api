@@ -6,6 +6,8 @@ from fastapi import APIRouter, FastAPI
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from stac_pydantic import ItemCollection
+from stac_pydantic.api import ConformanceClasses, LandingPage
 from starlette.requests import Request
 
 from stac_api.api.extensions import FieldsExtension
@@ -24,8 +26,6 @@ from stac_api.config import ApiSettings, inject_settings
 from stac_api.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from stac_api.models import schemas
 from stac_api.utils.dependencies import READER, WRITER
-from stac_pydantic import ItemCollection
-from stac_pydantic.api import ConformanceClasses, LandingPage
 
 
 @dataclass
@@ -84,7 +84,9 @@ class StacApi:
             response_model_exclude_unset=True,
             response_model_exclude_none=True,
             methods=["GET"],
-            endpoint=create_endpoint_with_depends(self.backend.client.get_item, ItemUri),
+            endpoint=create_endpoint_with_depends(
+                self.backend.client.get_item, ItemUri
+            ),
         )
         router.add_api_route(
             name="Search",
@@ -217,6 +219,9 @@ class StacApi:
             self.settings.default_includes = fields_ext.default_includes
 
         inject_settings(self.settings)
+
+        # register backend
+        self.backend.register(self.app)
 
         self.register_core()
         # register extensions
