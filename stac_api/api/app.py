@@ -19,7 +19,7 @@ from stac_api.api.models import (
     _create_request_model,
 )
 from stac_api.api.routes import create_endpoint_from_model, create_endpoint_with_depends
-from stac_api.clients.base import BaseCoreClient
+from stac_api.backends import StacBackend
 from stac_api.config import ApiSettings, inject_settings
 from stac_api.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from stac_api.models import schemas
@@ -33,7 +33,8 @@ class StacApi:
     """StacApi"""
 
     settings: ApiSettings
-    client: BaseCoreClient
+
+    backend: StacBackend
     extensions: Optional[List[ApiExtension]] = field(  # type:ignore
         default_factory=list
     )
@@ -62,7 +63,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_endpoint_with_depends(
-                self.client.landing_page, EmptyRequest
+                self.backend.client.landing_page, EmptyRequest
             ),
         )
         router.add_api_route(
@@ -73,7 +74,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_endpoint_with_depends(
-                self.client.conformance, EmptyRequest
+                self.backend.client.conformance, EmptyRequest
             ),
         )
         router.add_api_route(
@@ -83,7 +84,7 @@ class StacApi:
             response_model_exclude_unset=True,
             response_model_exclude_none=True,
             methods=["GET"],
-            endpoint=create_endpoint_with_depends(self.client.get_item, ItemUri),
+            endpoint=create_endpoint_with_depends(self.backend.client.get_item, ItemUri),
         )
         router.add_api_route(
             name="Search",
@@ -93,7 +94,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["POST"],
             endpoint=create_endpoint_from_model(
-                self.client.post_search, search_request_model
+                self.backend.client.post_search, search_request_model
             ),
         ),
         router.add_api_route(
@@ -104,7 +105,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_endpoint_with_depends(
-                self.client.get_search, SearchGetRequest
+                self.backend.client.get_search, SearchGetRequest
             ),
         )
         router.add_api_route(
@@ -115,7 +116,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_endpoint_with_depends(
-                self.client.all_collections, EmptyRequest
+                self.backend.client.all_collections, EmptyRequest
             ),
         )
         router.add_api_route(
@@ -126,7 +127,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_endpoint_with_depends(
-                self.client.get_collection, CollectionUri
+                self.backend.client.get_collection, CollectionUri
             ),
         )
         router.add_api_route(
@@ -137,7 +138,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_endpoint_with_depends(
-                self.client.item_collection, ItemCollectionUri
+                self.backend.client.item_collection, ItemCollectionUri
             ),
         )
         self.app.include_router(router)
@@ -209,7 +210,7 @@ class StacApi:
         """post-init hook"""
         # inject settings
         self.app.debug = self.settings.debug
-        self.client.extensions = self.extensions
+        self.backend.client.extensions = self.extensions
 
         fields_ext = self.get_extension(FieldsExtension)
         if fields_ext:
