@@ -25,7 +25,6 @@ from stac_api.backends import StacBackend
 from stac_api.config import ApiSettings, inject_settings
 from stac_api.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from stac_api.models import schemas
-from stac_api.utils.dependencies import READER, WRITER
 
 
 @dataclass
@@ -169,23 +168,6 @@ class StacApi:
 
         self.app.include_router(mgmt_router, tags=["Liveliness/Readiness"])
 
-    def setup_db_connection(self):
-        """setup database connection"""
-
-        @self.app.middleware("http")
-        async def create_db_connection(request: Request, call_next):
-            """Create a new database connection for each request"""
-            if "titiler" in str(request.url):
-                return await call_next(request)
-            reader = request.app.state.DB_READER()
-            writer = request.app.state.DB_WRITER()
-            READER.set(reader)
-            WRITER.set(writer)
-            resp = await call_next(request)
-            reader.close()
-            writer.close()
-            return resp
-
     def __post_init__(self):
         """post-init hook"""
         # inject settings
@@ -212,8 +194,6 @@ class StacApi:
 
         # register exception handlers
         add_exception_handlers(self.app, status_codes=self.exceptions)
-
-        self.setup_db_connection()
 
         # customize openapi
         self.app.openapi = self.customize_openapi

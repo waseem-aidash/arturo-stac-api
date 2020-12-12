@@ -6,11 +6,11 @@ from typing import Optional, Type
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Query
+from starlette.datastructures import State
 
 import psycopg2
 from stac_api import errors
 from stac_api.models import database
-from stac_api.utils.dependencies import READER, WRITER
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +20,18 @@ class PostgresClient(abc.ABC):
     """Database CRUD operations on the defined table"""
 
     table: Optional[Type[database.BaseModel]] = None
+    state: State = State()
 
     @property
     def reader_session(self):
         """Get reader session from context var"""
-        return READER.get()
+        # TODO: Make this safer
+        return self.state.DB_READER()
 
     @property
     def writer_session(self):
         """Get writer session from context var"""
-        return WRITER.get()
+        return self.state.DB_WRITER()
 
     @staticmethod
     def row_exists(query: Query) -> bool:
