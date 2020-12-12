@@ -172,28 +172,6 @@ class StacApi:
     def setup_db_connection(self):
         """setup database connection"""
 
-        @self.app.on_event("startup")
-        async def on_startup():
-            """Create database engines and sessions on startup"""
-            self.app.state.ENGINE_READER = create_engine(
-                self.settings.reader_connection_string, echo=self.settings.debug
-            )
-            self.app.state.ENGINE_WRITER = create_engine(
-                self.settings.writer_connection_string, echo=self.settings.debug
-            )
-            self.app.state.DB_READER = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.app.state.ENGINE_READER
-            )
-            self.app.state.DB_WRITER = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.app.state.ENGINE_WRITER
-            )
-
-        @self.app.on_event("shutdown")
-        async def on_shutdown():
-            """Dispose of database engines and sessions on app shutdown"""
-            self.app.state.ENGINE_READER.dispose()
-            self.app.state.ENGINE_WRITER.dispose()
-
         @self.app.middleware("http")
         async def create_db_connection(request: Request, call_next):
             """Create a new database connection for each request"""
@@ -211,6 +189,7 @@ class StacApi:
     def __post_init__(self):
         """post-init hook"""
         # inject settings
+        self.app.state.settings = self.settings
         self.app.debug = self.settings.debug
         self.backend.client.extensions = self.extensions
 
