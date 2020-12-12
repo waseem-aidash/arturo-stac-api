@@ -10,13 +10,15 @@ from stac_api.clients.base import BaseCoreClient
 @dataclass
 class StacBackend(abc.ABC):
     client: BaseCoreClient
+    state: State = State()
 
     def register(self, app: FastAPI):
         """register backend with the application"""
 
         # inject state
-        self.state: State = app.state
-        self.client.state = self.state
+        self.state = app.state
+        self.client.inject_state(app.state)
+
 
         # add event handlers
         if hasattr(self, "on_startup"):

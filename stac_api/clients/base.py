@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, Union
 
+from starlette.datastructures import State
+
 from stac_api.api.extensions.extension import ApiExtension
 from stac_api.models import schemas
 from stac_pydantic import ItemCollection
@@ -56,6 +58,10 @@ class BaseCoreClient(abc.ABC):
     """Base client for core endpoints defined by stac"""
 
     extensions: List[ApiExtension] = field(default_factory=list)
+    state: State = State()
+
+    def inject_state(self, state: State):
+        self.state = state
 
     def extension_is_enabled(self, extension: Type[ApiExtension]) -> bool:
         """check if an api extension is enabled"""
