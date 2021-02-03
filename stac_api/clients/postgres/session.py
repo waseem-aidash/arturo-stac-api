@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 class FastAPISessionMaker(_FastAPISessionMaker):
     """FastAPISessionMaker."""
 
-    @contextmanager
     def context_session(self) -> Iterator[SqlSession]:
         """Override base method to include exception handling."""
         try:
@@ -52,3 +51,15 @@ class Session:
         """Post init handler."""
         self.reader: FastAPISessionMaker = FastAPISessionMaker(self.reader_conn_string)
         self.writer: FastAPISessionMaker = FastAPISessionMaker(self.writer_conn_string)
+
+    @contextmanager
+    def reader_session(self):
+        """Reader session."""
+        next(self.writer.context_session())
+        yield from self.reader.context_session()
+
+    @contextmanager
+    def writer_session(self):
+        """Writer session."""
+        next(self.reader.context_session())
+        yield from self.writer.context_session()

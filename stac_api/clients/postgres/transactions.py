@@ -25,7 +25,7 @@ class TransactionsClient(BaseTransactionsClient):
     def create_item(self, model: schemas.Item, **kwargs) -> schemas.Item:
         """Create item."""
         data = self.item_table.from_schema(model)
-        with self.session.writer.context_session() as session:
+        with self.session.writer_session() as session:
             session.add(data)
             data.base_url = str(kwargs["request"].base_url)
             return schemas.Item.from_orm(data)
@@ -35,14 +35,14 @@ class TransactionsClient(BaseTransactionsClient):
     ) -> schemas.Collection:
         """Create collection."""
         data = self.collection_table.from_schema(model)
-        with self.session.writer.context_session() as session:
+        with self.session.writer_session() as session:
             session.add(data)
             data.base_url = str(kwargs["request"].base_url)
             return schemas.Collection.from_orm(data)
 
     def update_item(self, model: schemas.Item, **kwargs) -> schemas.Item:
         """Update item."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             query = session.query(self.item_table).filter(
                 self.item_table.id == model.id
             )
@@ -62,7 +62,7 @@ class TransactionsClient(BaseTransactionsClient):
         self, model: schemas.Collection, **kwargs
     ) -> schemas.Collection:
         """Update collection."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             query = session.query(self.collection_table).filter(
                 self.collection_table.id == model.id
             )
@@ -76,7 +76,7 @@ class TransactionsClient(BaseTransactionsClient):
 
     def delete_item(self, id: str, **kwargs) -> schemas.Item:
         """Delete item."""
-        with self.session.writer.context_session() as session:
+        with self.session.writer_session() as session:
             query = session.query(self.item_table).filter(self.item_table.id == id)
             data = query.first()
             if not data:
@@ -87,7 +87,7 @@ class TransactionsClient(BaseTransactionsClient):
 
     def delete_collection(self, id: str, **kwargs) -> schemas.Collection:
         """Delete collection."""
-        with self.session.writer.context_session() as session:
+        with self.session.writer_session() as session:
             query = session.query(self.collection_table).filter(
                 self.collection_table.id == id
             )

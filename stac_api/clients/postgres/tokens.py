@@ -36,7 +36,7 @@ class PaginationTokenClient(abc.ABC):
         """Insert a keyset into the database."""
         # uid has collision chance of 1e-7 percent
         uid = urlsafe_b64encode(os.urandom(6)).decode()
-        with self.session.writer.context_session() as session:
+        with self.session.writer_session() as session:
             try:
                 token = database.PaginationToken(id=uid, keyset=keyset)
                 session.add(token)
@@ -50,6 +50,6 @@ class PaginationTokenClient(abc.ABC):
 
     def get_token(self, token_id: str) -> str:
         """Retrieve a keyset from the database."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             token = self._lookup_id(token_id, self.token_table, session)
             return token.keyset

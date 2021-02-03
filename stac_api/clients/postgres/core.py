@@ -99,7 +99,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
 
     def all_collections(self, **kwargs) -> List[schemas.Collection]:
         """Read all collections from the database."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             collections = session.query(self.collection_table).all()
             response = []
             for collection in collections:
@@ -109,7 +109,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
 
     def get_collection(self, id: str, **kwargs) -> schemas.Collection:
         """Get collection by id."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             collection = self._lookup_id(id, self.collection_table, session)
             # TODO: Don't do this
             collection.base_url = str(kwargs["request"].base_url)
@@ -119,7 +119,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
         self, id: str, limit: int = 10, token: str = None, **kwargs
     ) -> ItemCollection:
         """Read an item collection from the database."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             collection_children = (
                 session.query(self.item_table)
                 .join(self.collection_table)
@@ -184,7 +184,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
 
     def get_item(self, id: str, **kwargs) -> schemas.Item:
         """Get item by id."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             item = self._lookup_id(id, self.item_table, session)
             item.base_url = str(kwargs["request"].base_url)
             return schemas.Item.from_orm(item)
@@ -263,7 +263,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
         self, search_request: schemas.STACSearch, **kwargs
     ) -> Dict[str, Any]:
         """POST search catalog."""
-        with self.session.reader.context_session() as session:
+        with self.session.reader_session() as session:
             token = (
                 self.get_token(search_request.token) if search_request.token else False
             )
