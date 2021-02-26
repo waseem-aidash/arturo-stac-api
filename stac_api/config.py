@@ -55,6 +55,7 @@ class ApiSettings(BaseSettings):
     postgres_host_writer: str
     postgres_port: str
     postgres_dbname: str
+    base_url: str
 
     # Fields which are defined by STAC but not included in the database model
     forbidden_fields: Set[str] = {"type"}

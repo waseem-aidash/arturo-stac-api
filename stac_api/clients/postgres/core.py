@@ -23,7 +23,10 @@ from stac_api.clients.postgres.tokens import PaginationTokenClient
 from stac_api.errors import NotFoundError
 from stac_api.models import database, schemas
 from stac_api.models.links import CollectionLinks
+from stac_api.config import ApiSettings
 
+settings = ApiSettings()
+print(settings.base_url)
 logger = logging.getLogger(__name__)
 
 NumType = Union[float, int]
@@ -36,6 +39,13 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
     session: Session = attr.ib(default=attr.Factory(Session.create_from_env))
     item_table: Type[database.Item] = attr.ib(default=database.Item)
     collection_table: Type[database.Collection] = attr.ib(default=database.Collection)
+
+    @staticmethod
+    def _get_base_url(request):
+        if len(settings.base_url) > 0:
+            return settings.base_url
+        else:
+            return str(request.base_url)
 
     @staticmethod
     def _lookup_id(
@@ -56,32 +66,32 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
                 Link(
                     rel=Relations.self,
                     type=MimeTypes.json,
-                    href=str(kwargs["request"].base_url),
+                    href=CoreCrudClient._get_base_url(kwargs["request"]),
                 ),
                 Link(
                     rel=Relations.docs,
                     type=MimeTypes.html,
                     title="OpenAPI docs",
-                    href=urljoin(str(kwargs["request"].base_url), "/docs"),
+                    href="".join([CoreCrudClient._get_base_url(kwargs["request"]), "/docs"]),
                 ),
                 Link(
                     rel=Relations.conformance,
                     type=MimeTypes.json,
                     title="STAC/WFS3 conformance classes implemented by this server",
-                    href=urljoin(str(kwargs["request"].base_url), "/conformance"),
+                    href="".join([CoreCrudClient._get_base_url(kwargs["request"]), "/conformance"]),
                 ),
                 Link(
                     rel=Relations.search,
                     type=MimeTypes.geojson,
                     title="STAC search",
-                    href=urljoin(str(kwargs["request"].base_url), "/search"),
+                    href="".join([CoreCrudClient._get_base_url(kwargs["request"]), "/search"]),
                 ),
             ],
         )
         collections = self.all_collections(request=kwargs["request"])
         for coll in collections:
             coll_link = CollectionLinks(
-                collection_id=coll.id, base_url=str(kwargs["request"].base_url)
+                collection_id=coll.id, base_url=CoreCrudClient._get_base_url(kwargs["request"])
             ).self()
             coll_link.rel = Relations.child
             coll_link.title = coll.title
@@ -103,7 +113,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
             collections = session.query(self.collection_table).all()
             response = []
             for collection in collections:
-                collection.base_url = str(kwargs["request"].base_url)
+                collection.base_url = CoreCrudClient._get_base_url(kwargs["request"])
                 response.append(schemas.Collection.from_orm(collection))
             return response
 
@@ -112,7 +122,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
         with self.session.reader.context_session() as session:
             collection = self._lookup_id(id, self.collection_table, session)
             # TODO: Don't do this
-            collection.base_url = str(kwargs["request"].base_url)
+            collection.base_url = CoreCrudClient._get_base_url(kwargs["request"])
             return schemas.Collection.from_orm(collection)
 
     def item_collection(
@@ -147,12 +157,13 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
             )
 
             links = []
+            base_url = CoreCrudClient._get_base_url(kwargs["request"])
             if page.next:
                 links.append(
                     PaginationLink(
                         rel=Relations.next,
                         type="application/geo+json",
-                        href=f"{kwargs['request'].base_url}collections/{id}/items?token={page.next}&limit={limit}",
+                        href=f"{base_url}collections/{id}/items?token={page.next}&limit={limit}",
                         method="GET",
                     )
                 )
@@ -161,14 +172,14 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
                     PaginationLink(
                         rel=Relations.previous,
                         type="application/geo+json",
-                        href=f"{kwargs['request'].base_url}collections/{id}/items?token={page.previous}&limit={limit}",
+                        href=f"{base_url}collections/{id}/items?token={page.previous}&limit={limit}",
                         method="GET",
                     )
                 )
 
             response_features = []
             for item in page:
-                item.base_url = str(kwargs["request"].base_url)
+                item.base_url = CoreCrudClient._get_base_url(kwargs["request"])
                 response_features.append(schemas.Item.from_orm(item))
 
             context_obj = None
@@ -186,7 +197,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
         """Get item by id."""
         with self.session.reader.context_session() as session:
             item = self._lookup_id(id, self.item_table, session)
-            item.base_url = str(kwargs["request"].base_url)
+            item.base_url = CoreCrudClient._get_base_url(kwargs["request"])
             return schemas.Item.from_orm(item)
 
     def get_search(
@@ -375,7 +386,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
                     PaginationLink(
                         rel=Relations.next,
                         type="application/geo+json",
-                        href=f"{kwargs['request'].base_url}search",
+                        href=f"{CoreCrudClient._get_base_url(kwargs['request'])}/search",
                         method="POST",
                         body={"token": page.next},
                         merge=True,
@@ -386,7 +397,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
                     PaginationLink(
                         rel=Relations.previous,
                         type="application/geo+json",
-                        href=f"{kwargs['request'].base_url}search",
+                        href=f"{CoreCrudClient._get_base_url(kwargs['request'])}/search",
                         method="POST",
                         body={"token": page.previous},
                         merge=True,
@@ -401,7 +412,7 @@ class CoreCrudClient(PaginationTokenClient, BaseCoreClient):
             xvals = []
             yvals = []
             for item in page:
-                item.base_url = str(kwargs["request"].base_url)
+                item.base_url = CoreCrudClient._get_base_url(kwargs["request"])
                 item_model = schemas.Item.from_orm(item)
                 xvals += [item_model.bbox[0], item_model.bbox[2]]
                 yvals += [item_model.bbox[1], item_model.bbox[3]]

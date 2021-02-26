@@ -7,6 +7,7 @@ from stac_api.api.extensions import (
     SortExtension,
     TilesExtension,
     TransactionExtension,
+    ContextExtension
 )
 from stac_api.clients.postgres.core import CoreCrudClient
 from stac_api.clients.postgres.session import Session
@@ -24,11 +25,18 @@ api = StacApi(
     extensions=[
         TransactionExtension(client=TransactionsClient(session=session)),
         BulkTransactionExtension(client=BulkTransactionsClient(session=session)),
-        FieldsExtension(),
+        #FieldsExtension(),
         QueryExtension(),
         SortExtension(),
         TilesExtension(TilesClient(session=session)),
+        ContextExtension()
     ],
     client=CoreCrudClient(session=session),
 )
 app = api.app
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

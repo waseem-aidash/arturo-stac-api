@@ -70,6 +70,13 @@ class Queryables(str, AutoValueEnum):
     dtype = "cog:dtype"
     foo = "foo"
 
+    client = "aidash:client"
+    segment_id = "aidash:segment_id"
+    feeder_id = "aidash:feeder_id"
+
+    cloud_cover = "eo:cloud_cover"
+    snow_cover = "eo:snow_cover"
+
 
 @dataclass
 class QueryableTypes:
@@ -86,6 +93,14 @@ class QueryableTypes:
     width = sa.Integer
     minzoom = sa.Integer
     maxzoom = sa.Integer
+
+    client = sa.String
+    segment_id = sa.Integer
+    feeder_id = sa.String
+
+    cloud_cover = sa.Float
+    snow_cover = sa.Float
+
     dtype = sa.String
 
 
